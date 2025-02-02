@@ -6,9 +6,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.uber.org/zap/zaptest"
+	"go.uber.org/zap"
 
-	"github.com/yourusername/peppergo/pkg/types"
+	"github.com/pimentel/peppergo/pkg/types"
 )
 
 // MockProvider is a mock implementation of types.Provider

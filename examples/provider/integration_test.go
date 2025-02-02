@@ -9,9 +9,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
+	"golang.org/x/time/rate"
 
-	"github.com/yourusername/peppergo/internal/provider"
-	"github.com/yourusername/peppergo/pkg/types"
+	"github.com/pimentel/peppergo/internal/provider"
+	"github.com/pimentel/peppergo/pkg/types"
 )
 
 func TestAnthropicProviderIntegration(t *testing.T) {

@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 
-	"github.com/yourusername/peppergo/pkg/types"
+	"github.com/pimentel/peppergo/pkg/types"
 )
 
 // BaseAgent provides common functionality for all agents

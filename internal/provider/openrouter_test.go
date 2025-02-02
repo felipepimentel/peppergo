@@ -8,9 +8,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	"golang.org/x/time/rate"
+
+	"github.com/pimentel/peppergo/pkg/types"
 )
 
 // testConfig holds test configuration
@@ -77,8 +78,8 @@ func TestOpenRouterProviderIntegration(t *testing.T) {
 		// Test generation with options
 		response, err = provider.Generate(ctx,
 			"Count to 3",
-			WithTemperature(0.1),
-			WithMaxTokens(20),
+			types.WithTemperature(0.1),
+			types.WithMaxTokens(20),
 		)
 		require.NoError(t, err)
 		assert.NotEmpty(t, response.Content)
@@ -96,7 +97,7 @@ func TestOpenRouterProviderIntegration(t *testing.T) {
 		assert.Contains(t, err.Error(), "empty prompt")
 
 		// Test invalid temperature
-		_, err = provider.Generate(ctx, "test", WithTemperature(2.0))
+		_, err = provider.Generate(ctx, "test", types.WithTemperature(2.0))
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "invalid temperature")
 
@@ -114,7 +115,7 @@ func TestOpenRouterProviderIntegration(t *testing.T) {
 		require.NoError(t, err)
 
 		// Test with retries
-		response, err := provider.Generate(ctx, "Test with retries", WithRetries(3))
+		response, err := provider.Generate(ctx, "Test with retries", types.WithRetries(3))
 		require.NoError(t, err)
 		assert.NotEmpty(t, response.Content)
 	})

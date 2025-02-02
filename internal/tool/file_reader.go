@@ -9,7 +9,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/yourusername/peppergo/pkg/types"
+	"github.com/pimentel/peppergo/pkg/types"
 )
 
 // FileReaderTool provides file reading functionality

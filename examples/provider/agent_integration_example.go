@@ -4,12 +4,15 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	"go.uber.org/zap"
 
-	"github.com/yourusername/peppergo/internal/agent"
-	"github.com/yourusername/peppergo/internal/provider"
-	"github.com/yourusername/peppergo/pkg/types"
+	"github.com/pimentel/peppergo/internal/agent"
+	"github.com/pimentel/peppergo/internal/provider"
+	"github.com/pimentel/peppergo/pkg/types"
+
+	"golang.org/x/time/rate"
 )
 
 // SimpleAgent is a basic agent that uses the Anthropic provider

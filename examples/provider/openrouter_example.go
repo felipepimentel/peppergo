@@ -7,9 +7,10 @@ import (
 	"time"
 
 	"go.uber.org/zap"
+	"golang.org/x/time/rate"
 
-	"github.com/yourusername/peppergo/internal/provider"
-	"github.com/yourusername/peppergo/pkg/types"
+	"github.com/pimentel/peppergo/internal/provider"
+	"github.com/pimentel/peppergo/pkg/types"
 )
 
 func main() {
@@ -21,12 +22,16 @@ func main() {
 	}
 	defer logger.Sync()
 
+	// Create rate limiter - 10 requests per minute
+	limiter := rate.NewLimiter(rate.Every(6*time.Second), 1)
+
 	// Create primary provider configuration
 	primaryConfig := &provider.OpenRouterConfig{
 		APIKey:      os.Getenv("PEPPERPY_API_KEY"),
 		Model:       os.Getenv("PEPPERPY_MODEL"),
 		MaxTokens:   2000,
 		Temperature: 0.7,
+		RateLimiter: limiter,
 	}
 
 	// Create fallback provider configuration
@@ -89,8 +94,29 @@ func main() {
 	fmt.Printf("Model Used: %s\n", primaryConfig.Model)
 	fmt.Printf("Tokens Used: %d\n", response.Usage.TotalTokens)
 
-	// Example 3: Error Handling and Fallback
-	fmt.Println("\n=== Example 3: Error Handling and Fallback ===")
+	// Example 3: Generation with Retries
+	fmt.Println("\n=== Example 3: Generation with Retries ===")
+	response, err = primaryProvider.Generate(ctx,
+		"Tell me a short joke.",
+		provider.WithRetries(3),
+	)
+	if err != nil {
+		logger.Error("Failed to generate response from primary provider", zap.Error(err))
+		// Try fallback provider with retries
+		response, err = fallbackProvider.Generate(ctx,
+			"Tell me a short joke.",
+			provider.WithRetries(3),
+		)
+		if err != nil {
+			logger.Fatal("Both providers failed", zap.Error(err))
+		}
+	}
+	fmt.Printf("Response: %s\n", response.Content)
+	fmt.Printf("Model Used: %s\n", primaryConfig.Model)
+	fmt.Printf("Tokens Used: %d\n", response.Usage.TotalTokens)
+
+	// Example 4: Error Handling and Fallback
+	fmt.Println("\n=== Example 4: Error Handling and Fallback ===")
 	_, err = primaryProvider.Generate(ctx, "", types.WithMaxTokens(-1))
 	if err != nil {
 		fmt.Printf("Primary provider failed as expected: %v\n", err)
@@ -103,12 +129,12 @@ func main() {
 		fmt.Printf("Fallback Model Used: %s\n", fallbackConfig.Model)
 	}
 
-	// Example 4: Context Cancellation
-	fmt.Println("\n=== Example 4: Context Cancellation ===")
-	ctxWithTimeout, cancel := context.WithTimeout(ctx, 100*time.Millisecond)
+	// Example 5: Context Cancellation
+	fmt.Println("\n=== Example 5: Context Cancellation ===")
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, 1*time.Millisecond)
 	defer cancel()
 
-	_, err = primaryProvider.Generate(ctxWithTimeout, "This request will be cancelled due to timeout.")
+	_, err = primaryProvider.Generate(ctxWithTimeout, "This request will be cancelled.")
 	if err != nil {
 		fmt.Printf("Expected timeout error: %v\n", err)
 	}

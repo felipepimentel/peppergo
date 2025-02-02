@@ -8,7 +8,7 @@ import (
 	"gopkg.in/yaml.v3"
 	"go.uber.org/zap"
 
-	"github.com/yourusername/peppergo/pkg/types"
+	"github.com/pimentel/peppergo/pkg/types"
 )
 
 // Config represents an agent configuration
