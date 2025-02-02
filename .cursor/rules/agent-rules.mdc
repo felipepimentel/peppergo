@@ -1,0 +1,285 @@
+---
+title: Agent Rules
+description: Guidelines for implementing and managing AI agents in Go
+globs: internal/agent/**/*.go
+---
+
+# Agent System Guidelines
+
+## Agent Definition
+
+Agents are defined using YAML files in the `assets/agents` directory. Each agent definition includes:
+
+```yaml
+name: code-reviewer
+version: "1.0.0"
+description: "Expert code reviewer focused on best practices"
+
+capabilities:
+  - code_review
+  - security_audit
+  - performance_analysis
+
+role:
+  name: "Code Reviewer"
+  description: "Expert code reviewer with deep knowledge"
+  instructions: |
+    You are an expert code reviewer...
+
+tools:
+  - git_diff
+  - code_analysis
+  - security_scan
+
+settings:
+  context_window: 8000
+  response_format: "markdown"
+
+metadata:
+  author: "PepperGo Team"
+  tags: ["code", "review", "quality"]
+```
+
+## Agent Implementation
+
+1. **Base Agent Interface**
+   ```go
+   // agent/agent.go
+   
+   type Agent interface {
+       // Initialize sets up the agent with its configuration and capabilities
+       Initialize(ctx context.Context) error
+       
+       // Execute runs a task with the given input
+       Execute(ctx context.Context, task string, opts ...ExecuteOption) (*Response, error)
+       
+       // Cleanup performs any necessary cleanup
+       Cleanup(ctx context.Context) error
+       
+       // AddCapability adds a new capability to the agent
+       AddCapability(capability Capability) error
+       
+       // AddTool adds a new tool to the agent
+       AddTool(tool Tool) error
+   }
+   ```
+
+2. **Base Agent Implementation**
+   ```go
+   // agent/base.go
+   
+   type BaseAgent struct {
+       config     *Config
+       provider   Provider
+       tools      map[string]Tool
+       capabilities map[string]Capability
+       logger     *zap.Logger
+       mu         sync.RWMutex
+   }
+   
+   func (a *BaseAgent) Initialize(ctx context.Context) error {
+       // Initialize capabilities
+       for name, cap := range a.capabilities {
+           if err := cap.Initialize(ctx); err != nil {
+               return fmt.Errorf("failed to initialize capability %s: %w", name, err)
+           }
+       }
+       return nil
+   }
+   ```
+
+## Capability System
+
+1. **Capability Interface**
+   ```go
+   // capability/capability.go
+   
+   type Capability interface {
+       // Name returns the capability's unique identifier
+       Name() string
+       
+       // Initialize sets up the capability
+       Initialize(ctx context.Context) error
+       
+       // Execute runs the capability with given input
+       Execute(ctx context.Context, input interface{}) (interface{}, error)
+       
+       // Cleanup performs any necessary cleanup
+       Cleanup(ctx context.Context) error
+   }
+   ```
+
+2. **Custom Capability Example**
+   ```go
+   // capability/code_review.go
+   
+   type CodeReviewCapability struct {
+       logger *zap.Logger
+       config *Config
+   }
+   
+   func (c *CodeReviewCapability) Name() string {
+       return "code_review"
+   }
+   
+   func (c *CodeReviewCapability) Execute(ctx context.Context, input interface{}) (interface{}, error) {
+       // Implement code review logic
+       return nil, nil
+   }
+   ```
+
+## Tool System
+
+1. **Tool Interface**
+   ```go
+   // tool/tool.go
+   
+   type Tool interface {
+       // Name returns the tool's unique identifier
+       Name() string
+       
+       // Description returns the tool's description
+       Description() string
+       
+       // Execute runs the tool with given arguments
+       Execute(ctx context.Context, args map[string]interface{}) (interface{}, error)
+   }
+   ```
+
+2. **Custom Tool Example**
+   ```go
+   // tool/git_diff.go
+   
+   type GitDiffTool struct {
+       logger *zap.Logger
+   }
+   
+   func (t *GitDiffTool) Name() string {
+       return "git_diff"
+   }
+   
+   func (t *GitDiffTool) Execute(ctx context.Context, args map[string]interface{}) (interface{}, error) {
+       // Implement git diff logic
+       return nil, nil
+   }
+   ```
+
+## Provider Integration
+
+1. **Provider Interface**
+   ```go
+   // provider/provider.go
+   
+   type Provider interface {
+       // Initialize sets up the provider
+       Initialize(ctx context.Context) error
+       
+       // Generate generates a response for the given prompt
+       Generate(ctx context.Context, prompt string, opts ...GenerateOption) (*Response, error)
+       
+       // Stream streams responses for the given prompt
+       Stream(ctx context.Context, prompt string, opts ...StreamOption) (<-chan Response, error)
+   }
+   ```
+
+2. **Provider Implementation**
+   ```go
+   // provider/anthropic.go
+   
+   type AnthropicProvider struct {
+       client    *anthropic.Client
+       logger    *zap.Logger
+       config    *Config
+   }
+   
+   func (p *AnthropicProvider) Generate(ctx context.Context, prompt string, opts ...GenerateOption) (*Response, error) {
+       // Implement Anthropic Claude generation
+       return nil, nil
+   }
+   ```
+
+## Best Practices
+
+1. **Agent Design**
+   - Keep agents focused on specific tasks
+   - Use dependency injection for providers and tools
+   - Handle context cancellation properly
+   - Implement proper error handling and logging
+   - Use concurrent-safe data structures when needed
+
+2. **Capability Management**
+   - Initialize capabilities lazily
+   - Handle cleanup properly
+   - Use context for timeouts
+   - Implement proper error wrapping
+
+3. **Provider Usage**
+   - Handle rate limiting
+   - Implement retries with backoff
+   - Use context for timeouts
+   - Handle provider-specific errors
+
+4. **Error Handling**
+   ```go
+   // errors/errors.go
+   
+   var (
+       ErrCapabilityNotFound = errors.New("capability not found")
+       ErrToolNotFound       = errors.New("tool not found")
+       ErrProviderError      = errors.New("provider error")
+   )
+   
+   func IsCapabilityNotFound(err error) bool {
+       return errors.Is(err, ErrCapabilityNotFound)
+   }
+   ```
+
+## Testing
+
+1. **Agent Testing**
+   ```go
+   // agent/agent_test.go
+   
+   func TestAgent_Execute(t *testing.T) {
+       tests := []struct {
+           name    string
+           task    string
+           wantErr bool
+       }{
+           {
+               name:    "valid task",
+               task:    "analyze code",
+               wantErr: false,
+           },
+           {
+               name:    "invalid task",
+               task:    "",
+               wantErr: true,
+           },
+       }
+       
+       for _, tt := range tests {
+           t.Run(tt.name, func(t *testing.T) {
+               agent := NewTestAgent(t)
+               _, err := agent.Execute(context.Background(), tt.task)
+               if (err != nil) != tt.wantErr {
+                   t.Errorf("Execute() error = %v, wantErr %v", err, tt.wantErr)
+               }
+           })
+       }
+   }
+   ```
+
+2. **Mock Provider**
+   ```go
+   // provider/mock.go
+   
+   type MockProvider struct {
+       mock.Mock
+   }
+   
+   func (m *MockProvider) Generate(ctx context.Context, prompt string, opts ...GenerateOption) (*Response, error) {
+       args := m.Called(ctx, prompt, opts)
+       return args.Get(0).(*Response), args.Error(1)
+   }
+   ``` 

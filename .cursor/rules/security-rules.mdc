@@ -1,0 +1,362 @@
+---
+title: Security Rules
+description: Security standards and best practices for Go web applications
+globs: **/*.go
+---
+
+# Security Guidelines
+
+## Authentication
+
+1. **JWT Implementation**
+   ```go
+   // jwt/token.go
+   
+   // TokenManager handles JWT operations
+   type TokenManager struct {
+       secretKey []byte
+       duration  time.Duration
+   }
+   
+   // CreateToken generates a new JWT for the given user
+   func (tm *TokenManager) CreateToken(user *User) (string, error) {
+       claims := jwt.MapClaims{
+           "user_id": user.ID,
+           "role":    user.Role,
+           "exp":     time.Now().Add(tm.duration).Unix(),
+       }
+       
+       token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+       return token.SignedString(tm.secretKey)
+   }
+   ```
+
+2. **Password Handling**
+   ```go
+   // auth/password.go
+   
+   // HashPassword securely hashes a password using bcrypt
+   func HashPassword(password string) (string, error) {
+       bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
+       if err != nil {
+           return "", fmt.Errorf("failed to hash password: %w", err)
+       }
+       return string(bytes), nil
+   }
+   
+   // VerifyPassword checks if a password matches its hash
+   func VerifyPassword(hash, password string) error {
+       return bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+   }
+   ```
+
+## Authorization
+
+1. **RBAC Implementation**
+   ```go
+   // middleware/rbac.go
+   
+   // Role-based access control middleware
+   func RequireRole(roles ...string) func(http.Handler) http.Handler {
+       return func(next http.Handler) http.Handler {
+           return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+               user := r.Context().Value(UserKey).(*User)
+               
+               for _, role := range roles {
+                   if user.HasRole(role) {
+                       next.ServeHTTP(w, r)
+                       return
+                   }
+               }
+               
+               http.Error(w, "Forbidden", http.StatusForbidden)
+           })
+       }
+   }
+   ```
+
+2. **Permission Checking**
+   ```go
+   // auth/permissions.go
+   
+   // CheckPermission verifies if a user has the required permission
+   func CheckPermission(ctx context.Context, userID, resource, action string) error {
+       // Check cache first
+       if allowed, found := checkPermissionCache(ctx, userID, resource, action); found {
+           if !allowed {
+               return ErrPermissionDenied
+           }
+           return nil
+       }
+       
+       // Check database
+       allowed, err := checkPermissionDB(ctx, userID, resource, action)
+       if err != nil {
+           return fmt.Errorf("failed to check permission: %w", err)
+       }
+       
+       if !allowed {
+           return ErrPermissionDenied
+       }
+       
+       return nil
+   }
+   ```
+
+## Input Validation
+
+1. **Request Validation**
+   ```go
+   // validation/validator.go
+   
+   type CreateUserRequest struct {
+       Email    string `json:"email" validate:"required,email"`
+       Password string `json:"password" validate:"required,min=8,max=72"`
+       Name     string `json:"name" validate:"required,min=2"`
+   }
+   
+   func ValidateRequest(v interface{}) error {
+       validate := validator.New()
+       if err := validate.Struct(v); err != nil {
+           return fmt.Errorf("invalid request: %w", err)
+       }
+       return nil
+   }
+   ```
+
+2. **SQL Injection Prevention**
+   ```go
+   // repository/user.go
+   
+   // FindByEmail safely queries for a user by email
+   func (r *UserRepository) FindByEmail(ctx context.Context, email string) (*User, error) {
+       var user User
+       err := r.db.QueryRowContext(ctx,
+           "SELECT id, email, password FROM users WHERE email = $1",
+           email,
+       ).Scan(&user.ID, &user.Email, &user.Password)
+       
+       if err == sql.ErrNoRows {
+           return nil, ErrUserNotFound
+       }
+       if err != nil {
+           return nil, fmt.Errorf("failed to query user: %w", err)
+       }
+       
+       return &user, nil
+   }
+   ```
+
+## XSS Prevention
+
+1. **Content Security Policy**
+   ```go
+   // middleware/security.go
+   
+   func SecurityHeaders(next http.Handler) http.Handler {
+       return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+           // Set strict CSP
+           w.Header().Set("Content-Security-Policy", 
+               "default-src 'self'; "+
+               "script-src 'self' 'unsafe-inline'; "+
+               "style-src 'self' 'unsafe-inline'; "+
+               "img-src 'self' data: https:;")
+           
+           // Set other security headers
+           w.Header().Set("X-Content-Type-Options", "nosniff")
+           w.Header().Set("X-Frame-Options", "DENY")
+           w.Header().Set("X-XSS-Protection", "1; mode=block")
+           
+           next.ServeHTTP(w, r)
+       })
+   }
+   ```
+
+2. **HTML Escaping**
+   ```go
+   // templates/render.go
+   
+   // SafeHTML ensures content is properly escaped
+   func SafeHTML(content string) template.HTML {
+       // Only use for trusted content
+       return template.HTML(content)
+   }
+   
+   // EscapeHTML safely escapes HTML content
+   func EscapeHTML(content string) string {
+       return html.EscapeString(content)
+   }
+   ```
+
+## CSRF Protection
+
+1. **CSRF Middleware**
+   ```go
+   // middleware/csrf.go
+   
+   func CSRF(next http.Handler) http.Handler {
+       return csrf.Protect(
+           []byte(config.CSRFKey),
+           csrf.Secure(true),
+           csrf.Path("/"),
+       )(next)
+   }
+   ```
+
+2. **Form Implementation**
+   ```go
+   // templates/form.go
+   
+   func RenderForm(w http.ResponseWriter, r *http.Request) {
+       token := csrf.Token(r)
+       tmpl.Execute(w, map[string]interface{}{
+           "csrfField": csrf.TemplateField(r),
+       })
+   }
+   ```
+
+## Rate Limiting
+
+1. **Rate Limiter**
+   ```go
+   // middleware/ratelimit.go
+   
+   func RateLimit(next http.Handler) http.Handler {
+       limiter := rate.NewLimiter(rate.Every(time.Second), 10)
+       return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+           if !limiter.Allow() {
+               http.Error(w, "Too Many Requests", http.StatusTooManyRequests)
+               return
+           }
+           next.ServeHTTP(w, r)
+       })
+   }
+   ```
+
+## Secure Configuration
+
+1. **Configuration Loading**
+   ```go
+   // config/secure.go
+   
+   type SecurityConfig struct {
+       // JWT settings
+       JWT struct {
+           Secret   string        `yaml:"secret" validate:"required,min=32"`
+           Duration time.Duration `yaml:"duration" validate:"required"`
+       } `yaml:"jwt"`
+       
+       // TLS settings
+       TLS struct {
+           Cert string `yaml:"cert" validate:"required"`
+           Key  string `yaml:"key" validate:"required"`
+       } `yaml:"tls"`
+       
+       // Database credentials
+       Database struct {
+           DSN string `yaml:"dsn" validate:"required"`
+       } `yaml:"database"`
+   }
+   ```
+
+## Logging and Monitoring
+
+1. **Secure Logging**
+   ```go
+   // logger/secure.go
+   
+   // SecureLogger ensures sensitive data is not logged
+   type SecureLogger struct {
+       logger *zap.Logger
+   }
+   
+   func (l *SecureLogger) Log(ctx context.Context, msg string, fields ...zap.Field) {
+       // Remove sensitive data
+       fields = removeSensitiveData(fields)
+       
+       // Add request ID
+       if reqID := ctx.Value(RequestIDKey); reqID != nil {
+           fields = append(fields, zap.String("request_id", reqID.(string)))
+       }
+       
+       l.logger.Info(msg, fields...)
+   }
+```
+
+## Error Handling
+
+1. **Secure Error Responses**
+   ```go
+   // errors/handler.go
+   
+   func SecureErrorHandler(err error, w http.ResponseWriter, r *http.Request) {
+       // Log the full error internally
+       logger.Error("internal error", zap.Error(err))
+       
+       // Send safe error to client
+       switch {
+       case errors.Is(err, ErrNotFound):
+           http.Error(w, "Not Found", http.StatusNotFound)
+       case errors.Is(err, ErrUnauthorized):
+           http.Error(w, "Unauthorized", http.StatusUnauthorized)
+       default:
+           // Don't expose internal error details
+           http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+       }
+   }
+   ```
+
+## Security Testing
+
+1. **Security Tests**
+   ```go
+   // security/auth_test.go
+   
+   func TestPasswordHashing(t *testing.T) {
+       password := "secure_password123"
+       
+       // Test hashing
+       hash, err := HashPassword(password)
+       if err != nil {
+           t.Fatalf("failed to hash password: %v", err)
+       }
+       
+       // Verify correct password
+       if err := VerifyPassword(hash, password); err != nil {
+           t.Errorf("failed to verify correct password: %v", err)
+       }
+       
+       // Verify incorrect password
+       if err := VerifyPassword(hash, "wrong_password"); err == nil {
+           t.Error("verified incorrect password")
+       }
+   }
+   ```
+
+## Dependency Security
+
+1. **Dependency Scanning**
+   ```go
+   // Makefile
+   
+   .PHONY: security-scan
+   security-scan:
+       # Run gosec
+       gosec ./...
+       # Check dependencies for vulnerabilities
+       go list -json -m all | nancy sleuth
+   ```
+
+2. **Vendor Management**
+   ```go
+   // go.mod
+   
+   module myapp
+   
+   go 1.21
+   
+   require (
+       golang.org/x/crypto v0.14.0
+       golang.org/x/time v0.3.0
+   )
+``` 

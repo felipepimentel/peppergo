@@ -1,0 +1,134 @@
+name: code_analyzer
+version: "1.0.0"
+description: "Static code analysis tool for Go"
+
+config:
+  # Analysis rules and their configurations
+  rules:
+    complexity:
+      enabled: true
+      settings:
+        max_cyclomatic_complexity: 15
+        max_cognitive_complexity: 12
+        max_function_lines: 50
+        max_file_lines: 500
+        max_parameters: 5
+        max_return_values: 3
+        max_nested_blocks: 4
+
+    security:
+      enabled: true
+      settings:
+        check_sql_injection: true
+        check_xss: true
+        check_file_access: true
+        check_command_injection: true
+        check_crypto: true
+        check_tls: true
+        check_auth: true
+        check_secrets: true
+
+    performance:
+      enabled: true
+      settings:
+        check_allocations: true
+        check_goroutine_leaks: true
+        check_defer_usage: true
+        check_copy_locks: true
+        check_range_usage: true
+        check_string_concat: true
+        check_map_usage: true
+        check_channel_usage: true
+
+    style:
+      enabled: true
+      settings:
+        check_naming: true
+        check_package_names: true
+        check_receiver_names: true
+        check_variable_names: true
+        check_constant_names: true
+        check_type_names: true
+        check_function_names: true
+        enforce_gofmt: true
+
+    documentation:
+      enabled: true
+      settings:
+        require_package_docs: true
+        require_exported_docs: true
+        require_examples: false
+        check_godoc_format: true
+        check_comment_spelling: true
+
+    testing:
+      enabled: true
+      settings:
+        require_unit_tests: true
+        min_coverage: 80.0
+        require_benchmarks: false
+        check_test_naming: true
+        check_test_packages: true
+
+  # Analysis scope configuration
+  scope:
+    include_patterns:
+      - "**/*.go"
+    exclude_patterns:
+      - "**/vendor/**"
+      - "**/generated/**"
+      - "**/*_test.go"
+      - "**/mocks/**"
+    exclude_generated: true
+    exclude_test_files: true
+
+  # Analysis output configuration
+  output:
+    format: "json"
+    severity_levels:
+      - error
+      - warning
+      - info
+    group_by:
+      - file
+      - rule
+      - severity
+    include_source: true
+    include_suggestions: true
+    max_issues_per_file: 50
+    max_total_issues: 1000
+
+  # Analysis performance configuration
+  performance:
+    max_concurrent_files: 4
+    timeout_per_file: "30s"
+    memory_limit_mb: 1024
+    cache_results: true
+    cache_ttl: "24h"
+
+  # Integration configuration
+  integrations:
+    golangci_lint:
+      enabled: true
+      config_file: ".golangci.yml"
+    go_vet:
+      enabled: true
+    staticcheck:
+      enabled: true
+    gosec:
+      enabled: true
+    errcheck:
+      enabled: true
+
+metadata:
+  author: "PepperGo Team"
+  tags:
+    - static-analysis
+    - code-quality
+    - go
+  dependencies:
+    go: ">=1.21.0"
+    tools:
+      golangci-lint: ">=1.50.0"
+      gosec: ">=2.15.0"
+      staticcheck: ">=2023.1.0" 

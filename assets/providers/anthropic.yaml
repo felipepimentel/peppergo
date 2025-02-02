@@ -1,0 +1,121 @@
+name: anthropic
+version: "1.0.0"
+description: "Anthropic Claude provider"
+
+config:
+  # API configuration
+  api:
+    key: "${ANTHROPIC_API_KEY}"
+    base_url: "https://api.anthropic.com/v1"
+    timeout: "30s"
+    max_retries: 3
+    retry_delay: "1s"
+
+  # Model configuration
+  model:
+    name: "claude-2"
+    max_tokens: 100000
+    default_temperature: 0.7
+    default_top_p: 1.0
+    default_top_k: 40
+    stop_sequences:
+      - "\n\nHuman:"
+      - "\n\nAssistant:"
+    presence_penalty: 0.0
+    frequency_penalty: 0.0
+
+  # Request configuration
+  request:
+    max_concurrent: 10
+    rate_limit:
+      requests_per_minute: 60
+      burst: 10
+    timeout:
+      connect: "5s"
+      read: "30s"
+      write: "5s"
+      idle: "90s"
+    keep_alive: "30s"
+
+  # Response configuration
+  response:
+    format: "json"
+    stream: true
+    include_metadata: true
+    include_usage: true
+    include_timestamps: true
+
+  # Cache configuration
+  cache:
+    enabled: true
+    type: "memory"
+    ttl: "1h"
+    max_size: "100MB"
+    cleanup_interval: "5m"
+
+  # Monitoring configuration
+  monitoring:
+    enabled: true
+    metrics:
+      request_duration: true
+      token_usage: true
+      error_rate: true
+      cache_hits: true
+    tracing:
+      enabled: true
+      sample_rate: 0.1
+    logging:
+      level: "info"
+      format: "json"
+      include_request_id: true
+      include_timestamp: true
+
+  # Security configuration
+  security:
+    tls:
+      enabled: true
+      verify: true
+      min_version: "1.2"
+    request_validation:
+      max_prompt_length: 32768
+      max_tokens: 4096
+      allowed_models:
+        - "claude-2"
+        - "claude-instant-1"
+    response_validation:
+      check_content_type: true
+      verify_signature: true
+
+  # Error handling configuration
+  error_handling:
+    retry_codes:
+      - 429  # Rate limit
+      - 500  # Internal server error
+      - 502  # Bad gateway
+      - 503  # Service unavailable
+      - 504  # Gateway timeout
+    backoff:
+      initial: "1s"
+      max: "30s"
+      multiplier: 2.0
+    fallback:
+      enabled: false
+      provider: ""
+
+metadata:
+  author: "PepperGo Team"
+  tags:
+    - ai
+    - llm
+    - anthropic
+    - claude
+  dependencies:
+    go: ">=1.21.0"
+  supported_capabilities:
+    - code_review
+    - security_audit
+    - performance_analysis
+  performance:
+    latency_p95: "2s"
+    tokens_per_second: 1000
+    max_batch_size: 10 

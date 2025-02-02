@@ -1,0 +1,189 @@
+---
+title: Architecture Rules
+description: Validates project structure, prevents architectural anti-patterns, and ensures scalability for Go web projects.
+globs: **/*.go
+---
+
+# Project Structure Validation
+
+- Execute `make validate-structure` before starting any development or integration task.
+- If unexpected items or missing paths are found, do not automatically modify `project_structure.yml`.
+  - **Approval Required**: Any changes to project structure must be explicitly approved by the user.
+  - **Steps** to handle discrepancies:
+    1. Log the issue with a detailed explanation.
+    2. Propose a solution (justification, alternatives).
+    3. Wait for user confirmation before applying modifications.
+  - **Prohibited**: Avoid redundant packages (e.g., `data`, `store`). Consolidate them instead.
+- Rerun the validation script after user-approved changes.
+
+---
+
+## Directory Structure Rules
+
+1. **Project Layout**
+   ```
+   .
+   ├── cmd/                    # Main applications
+   │   └── api/               # Web API entry point
+   ├── internal/              # Private application code
+   │   ├── domain/           # Business domain types
+   │   ├── handlers/         # HTTP handlers
+   │   ├── middleware/       # HTTP middleware
+   │   ├── repository/       # Data access layer
+   │   └── service/          # Business logic
+   ├── pkg/                   # Public libraries
+   │   ├── config/           # Configuration
+   │   └── logger/           # Logging utilities
+   ├── api/                   # OpenAPI/Swagger specs
+   │   └── swagger.yaml
+   ├── web/                   # Web assets
+   │   ├── templates/
+   │   └── static/
+   ├── scripts/              # Build and maintenance scripts
+   └── test/                 # Additional test files
+       └── integration/
+   ```
+
+2. **Test Organization**
+   - Unit tests: Next to the code being tested (`foo_test.go`)
+   - Integration tests: In `/test/integration`
+   - Example:
+     ```
+     internal/
+     ├── handlers/
+     │   ├── user.go
+     │   └── user_test.go
+     test/
+     └── integration/
+         └── api_test.go
+     ```
+
+3. **Configuration**
+   - All configs in `/configs` directory
+   - Environment-specific configs
+   - Example:
+     ```
+     configs/
+     ├── config.go
+     ├── development.yaml
+     ├── production.yaml
+     └── testing.yaml
+     ```
+
+## Anti-Patterns
+
+- **Global State**: Use dependency injection (`GLOBAL-STATE`).
+- **Circular Dependencies**: Refactor required (`ARCH-REFACTOR`).
+- **Interface Bloat**: Keep interfaces small (`INTERFACE-BLOAT`).
+- **Concrete Dependencies**: Use interfaces (`CONCRETE-DEP`).
+- **Unstructured Logging**: Use structured logging (`LOG-STRUCTURE`).
+- **Mixed Concerns**: Separate layers properly (`MIXED-CONCERNS`).
+
+| Violation             | Action               | Tag                  |
+|-----------------------|----------------------|----------------------|
+| Global State          | Use DI               | GLOBAL-STATE         |
+| Circular Dependencies | Refactor required    | ARCH-REFACTOR        |
+| Interface Bloat       | Split interfaces     | INTERFACE-BLOAT      |
+| Concrete Dependencies | Use interfaces       | CONCRETE-DEP         |
+| Unstructured Logging  | Use structured logs  | LOG-STRUCTURE        |
+| Mixed Concerns        | Separate layers      | MIXED-CONCERNS       |
+
+```go
+// Bad Practice:
+var globalDB *sql.DB  // GLOBAL-STATE
+
+// Good Practice:
+type Service struct {
+    db *sql.DB
+    logger *zap.Logger
+}
+```
+
+---
+
+# Core Architecture Components
+
+## 1. Configuration Management
+```go
+type Config struct {
+    Server struct {
+        Port int    `yaml:"port"`
+        Host string `yaml:"host"`
+    } `yaml:"server"`
+    Database struct {
+        DSN string `yaml:"dsn"`
+    } `yaml:"database"`
+}
+```
+
+## 2. Observability Stack
+```go
+// Structured logging
+logger := zap.NewProduction()
+defer logger.Sync()
+
+// Tracing
+tracer := otel.Tracer("service-name")
+ctx, span := tracer.Start(ctx, "operation-name")
+defer span.End()
+```
+
+## 3. Data Layer
+```go
+type Repository interface {
+    Find(ctx context.Context, id string) (*Entity, error)
+    Save(ctx context.Context, entity *Entity) error
+}
+
+type PostgresRepository struct {
+    db *sql.DB
+}
+```
+
+## 4. HTTP Layer
+```go
+type Handler struct {
+    service Service
+    logger  *zap.Logger
+}
+
+func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
+    ctx := r.Context()
+    // ... handler implementation
+}
+```
+
+---
+
+# Scalability Guidelines
+- Use context for cancellation and timeouts
+- Implement graceful shutdown
+- Use connection pooling
+- Implement proper caching strategies
+- Design for horizontal scaling
+- Use message queues for async operations
+
+---
+
+# Security Requirements
+- Use secure middleware (CORS, rate limiting)
+- Implement proper authentication/authorization
+- Use prepared statements for SQL
+- Implement input validation
+- Use secure headers
+- Implement audit logging
+- Use TLS for all external communication
+
+## Example Security Implementation
+```go
+func secureMiddleware(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        // Set security headers
+        w.Header().Set("X-Frame-Options", "DENY")
+        w.Header().Set("X-Content-Type-Options", "nosniff")
+        w.Header().Set("X-XSS-Protection", "1; mode=block")
+        
+        next.ServeHTTP(w, r)
+    })
+}
+```

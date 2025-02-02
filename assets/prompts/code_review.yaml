@@ -1,0 +1,199 @@
+name: code_review
+version: "1.0.0"
+description: "Code review prompt templates"
+
+templates:
+  # Base system prompt
+  system: |
+    You are an expert code reviewer with deep knowledge of Go best practices,
+    clean architecture principles, and security considerations. Your role is to
+    provide detailed, actionable feedback on code quality, maintainability,
+    and potential issues.
+
+    Focus Areas:
+    1. Code Style and Best Practices
+    2. Security and Safety
+    3. Performance and Efficiency
+    4. Documentation and Testing
+    5. Architecture and Design
+    6. Concurrency and Resource Management
+
+    Guidelines:
+    - Be specific and actionable in your feedback
+    - Provide examples when suggesting improvements
+    - Consider both immediate and long-term implications
+    - Focus on maintainability and readability
+    - Highlight potential security vulnerabilities
+    - Suggest performance optimizations when relevant
+    - Check for proper error handling and logging
+    - Verify interface implementations
+    - Look for opportunities to improve testing
+
+    Format your responses in markdown, using appropriate sections and code blocks.
+
+  # Review request template
+  review_request: |
+    Please review the following Go code:
+
+    File: {{file_path}}
+    ```go
+    {{code}}
+    ```
+
+    Context:
+    - Package: {{package_name}}
+    - Dependencies: {{dependencies}}
+    - Test Coverage: {{test_coverage}}%
+
+    Focus on:
+    {{#each focus_areas}}
+    - {{this}}
+    {{/each}}
+
+    Additional Notes:
+    {{notes}}
+
+  # Issue template
+  issue: |
+    ## Issue: {{title}}
+    
+    **Severity**: {{severity}}
+    **Location**: {{file}}:{{line}}
+    
+    ### Description
+    {{description}}
+    
+    ### Impact
+    {{impact}}
+    
+    ### Recommendation
+    {{recommendation}}
+    
+    ### Example Fix
+    ```go
+    {{example}}
+    ```
+
+  # Summary template
+  summary: |
+    # Code Review Summary
+
+    ## Overview
+    - Files Reviewed: {{files_count}}
+    - Issues Found: {{issues_count}}
+    - Review Date: {{date}}
+
+    ## Issues by Severity
+    - Critical: {{critical_count}}
+    - High: {{high_count}}
+    - Medium: {{medium_count}}
+    - Low: {{low_count}}
+
+    ## Key Findings
+    {{#each findings}}
+    ### {{title}}
+    {{description}}
+    {{/each}}
+
+    ## Recommendations
+    {{#each recommendations}}
+    ### {{title}}
+    {{description}}
+    {{/each}}
+
+    ## Next Steps
+    {{next_steps}}
+
+  # Performance review template
+  performance: |
+    ## Performance Analysis
+
+    ### Resource Usage
+    - CPU Complexity: {{cpu_complexity}}
+    - Memory Allocations: {{memory_allocations}}
+    - Goroutine Count: {{goroutine_count}}
+
+    ### Bottlenecks
+    {{#each bottlenecks}}
+    #### {{location}}
+    {{description}}
+    {{/each}}
+
+    ### Optimization Opportunities
+    {{#each optimizations}}
+    #### {{title}}
+    {{description}}
+    ```go
+    {{example}}
+    ```
+    {{/each}}
+
+  # Security review template
+  security: |
+    ## Security Analysis
+
+    ### Vulnerabilities
+    {{#each vulnerabilities}}
+    #### {{title}} ({{severity}})
+    - Description: {{description}}
+    - Impact: {{impact}}
+    - Mitigation: {{mitigation}}
+    {{/each}}
+
+    ### Security Best Practices
+    {{#each best_practices}}
+    #### {{title}}
+    {{description}}
+    {{/each}}
+
+    ### Recommendations
+    {{#each recommendations}}
+    - {{this}}
+    {{/each}}
+
+variables:
+  severities:
+    - critical
+    - high
+    - medium
+    - low
+    - info
+
+  focus_areas:
+    - style:
+        weight: 1.0
+        description: "Code style and Go best practices"
+    - security:
+        weight: 1.0
+        description: "Security vulnerabilities and best practices"
+    - performance:
+        weight: 0.8
+        description: "Performance optimizations and efficiency"
+    - documentation:
+        weight: 0.7
+        description: "Code documentation and comments"
+    - testing:
+        weight: 0.9
+        description: "Test coverage and quality"
+    - architecture:
+        weight: 1.0
+        description: "Code architecture and design"
+    - concurrency:
+        weight: 0.9
+        description: "Concurrent programming and resource management"
+
+metadata:
+  author: "PepperGo Team"
+  tags:
+    - code-review
+    - prompts
+    - templates
+  supported_capabilities:
+    - code_review
+    - security_audit
+    - performance_analysis
+  dependencies:
+    capabilities:
+      code_review: ">=1.0.0"
+      security_audit: ">=1.0.0"
+      performance_analysis: ">=1.0.0" 

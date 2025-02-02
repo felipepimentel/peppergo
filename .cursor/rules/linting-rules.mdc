@@ -1,0 +1,204 @@
+---
+title: Linting Rules
+description: Defines standards for code linting and automatic fixes for Go projects
+globs: **/*.go
+---
+
+# Linting Management
+
+## Automatic Fixes
+
+### Priority Levels
+
+1. **Auto-Fix (Level 1)**
+   - Code formatting (gofmt)
+   - Import sorting
+   - Unused imports
+   - Variable naming
+   - Missing comments
+   - Simple go vet issues
+
+2. **Propose Fix (Level 2)**
+   - Interface implementations
+   - Error handling patterns
+   - Function signatures
+   - Package organization
+   - Struct field tags
+
+3. **Manual Review (Level 3)**
+   - Security issues
+   - Performance problems
+   - Architectural violations
+   - Complex refactoring
+   - Concurrency issues
+
+## Decision Matrix
+
+| Issue Type                | Action    | Example                                    |
+|--------------------------|-----------|--------------------------------------------| 
+| Code Format              | Auto-Fix  | Run gofmt/goimports                        |
+| Missing Error Check      | Auto-Fix  | Add error handling                         |
+| Unused Variable          | Auto-Fix  | Remove or use variable                     |
+| Security Violation       | Manual    | Review and fix security issue              |
+| Performance Issue        | Manual    | Profile and optimize code                  |
+
+## Auto-Fix Examples
+
+### Error Handling
+```go
+// Before: Missing error check
+file.Write(data)
+
+// After: Automatic fix
+_, err := file.Write(data)
+if err != nil {
+    return fmt.Errorf("failed to write data: %w", err)
+}
+```
+
+### Import Organization
+```go
+// Before: Unorganized imports
+import (
+    "fmt"
+    "example.com/myapp/internal/models"
+    "strings"
+    "context"
+)
+
+// After: Automatic fix
+import (
+    "context"
+    "fmt"
+    "strings"
+
+    "example.com/myapp/internal/models"
+)
+```
+
+### Variable Naming
+```go
+// Before: Poor naming
+func (s *Srv) h(w http.ResponseWriter, r *http.Request) {}
+
+// After: Automatic fix
+func (s *Server) handleRequest(w http.ResponseWriter, r *http.Request) {}
+```
+
+## Implementation Guidelines
+
+1. **Linter Configuration**
+   ```yaml
+   # .golangci.yml
+   linters:
+     enable:
+       - gofmt
+       - goimports
+       - govet
+       - errcheck
+       - staticcheck
+       - gosimple
+       - ineffassign
+       - revive
+   
+   linters-settings:
+     revive:
+       rules:
+         - name: exported
+           severity: warning
+         - name: package-comments
+           severity: warning
+   ```
+
+2. **Fix Application**
+   ```go
+   // Example of applying fixes
+   type LintFixer struct {
+       file string
+   }
+
+   func (f *LintFixer) AutoFix() error {
+       // Apply gofmt
+       // Run goimports
+       // Execute other auto-fixes
+       return nil
+   }
+   ```
+
+## Automation Rules
+
+1. **Always Auto-Fix**
+   - Code formatting (gofmt)
+   - Import organization (goimports)
+   - Unused variables/imports
+   - Simple go vet issues
+   - Basic comment formatting
+
+2. **Propose and Apply if Approved**
+   - Error handling patterns
+   - Interface implementations
+   - Function signatures
+   - Struct tags
+
+3. **Never Auto-Fix**
+   - Security issues
+   - Concurrency patterns
+   - Performance optimizations
+   - Architectural changes
+   - Complex refactoring
+
+## Fix Verification
+
+1. **Pre-Fix Checks**
+   - Run tests
+   - Check compilation
+   - Verify imports
+   - Run go vet
+
+2. **Post-Fix Validation**
+   - Run tests again
+   - Verify no new issues
+   - Check performance
+   - Validate functionality
+
+## Example Workflow
+
+```go
+package linting
+
+type LintManager struct {
+    file string
+}
+
+func (m *LintManager) HandleLintIssues() error {
+    // Get lint issues
+    issues, err := m.Check()
+    if err != nil {
+        return fmt.Errorf("failed to check linting: %w", err)
+    }
+
+    for _, issue := range issues {
+        switch issue.Level {
+        case 1:
+            // Auto-fix level 1 issues
+            if err := m.AutoFix(issue); err != nil {
+                return fmt.Errorf("failed to auto-fix: %w", err)
+            }
+        case 2:
+            // Propose fixes for level 2 issues
+            fix, err := m.GenerateFix(issue)
+            if err != nil {
+                return fmt.Errorf("failed to generate fix: %w", err)
+            }
+            if fix.IsSafe() {
+                if err := m.ApplyFix(fix); err != nil {
+                    return fmt.Errorf("failed to apply fix: %w", err)
+                }
+            }
+        default:
+            // Log level 3 issues for manual review
+            m.LogForReview(issue)
+        }
+    }
+    return nil
+} 

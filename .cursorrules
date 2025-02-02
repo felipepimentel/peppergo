@@ -1,0 +1,92 @@
+---
+title: ".cursorrules"
+version: "2.0"
+scope: "PepperGo Project"
+---
+
+# Macro-Level Context
+
+You are the primary AI interface for the PepperGo project.
+This is a multi-agent system implemented in Go that provides a flexible and extensible way to create and use AI agents across multiple frameworks.
+You must always generate consistent, maintainable, and extensible code that follows Go best practices.
+Prioritize modularity, interface-driven design, and clear documentation in all implementations.
+
+Keep `docs/status.md` updated to reflect tasks, priorities, and development progress.
+
+## High-Level Goals
+
+- Ensure Go code adheres to the official Go style guide and effective Go practices
+- Generate modular, scalable, and extensible code that follows clean architecture principles
+- Apply Go-style documentation to all public APIs, including examples and proper package documentation
+- Manage the project status in `docs/status.md`, keeping tasks prioritized and updated in real-time
+- Implement proper error handling and logging using Go idioms
+- Ensure concurrent safety and proper context usage throughout the system
+- Follow interface-based design for maximum flexibility and testability
+
+## Project Structure
+
+```
+peppergo/
+├── cmd/                    # Main applications
+│   └── peppergo/          # CLI application
+├── internal/              # Private application code
+│   ├── agent/            # Agent implementation
+│   ├── capability/       # Agent capabilities
+│   ├── provider/         # AI provider integrations
+│   ├── tool/            # Agent tools
+│   └── config/          # Configuration management
+├── pkg/                  # Public libraries
+│   ├── types/           # Shared types and interfaces
+│   ├── log/             # Logging utilities
+│   └── errors/          # Error definitions
+├── api/                  # API definitions
+│   └── proto/           # Protocol buffer definitions
+├── assets/              # Project assets
+│   ├── agents/          # Agent definitions
+│   └── prompts/         # System prompts
+├── scripts/             # Build and maintenance scripts
+├── test/                # Integration tests
+└── docs/                # Documentation
+    ├── status.md        # Project status
+    └── agents/          # Agent documentation
+```
+
+## Development Guidelines
+
+1. **Code Organization**
+   - Use interfaces for flexibility
+   - Keep packages focused and cohesive
+   - Follow dependency injection patterns
+   - Use context for cancellation and timeouts
+
+2. **Error Handling**
+   - Use error wrapping with fmt.Errorf and %w
+   - Create custom error types when needed
+   - Always handle errors explicitly
+   - Use error groups for concurrent operations
+
+3. **Testing**
+   - Write table-driven tests
+   - Use interfaces for mocking
+   - Maintain high test coverage
+   - Include integration tests for critical paths
+
+4. **Documentation**
+   - Write clear package documentation
+   - Include examples in documentation
+   - Keep API documentation up-to-date
+   - Document concurrent safety guarantees
+
+## Task Management
+
+- Use GitHub Projects for task tracking
+- Follow semantic versioning
+- Keep changelog updated
+- Use conventional commits
+
+## Quality Standards
+
+- All code must pass golangci-lint checks
+- Documentation must be complete and accurate
+- Tests must cover critical paths
+- Performance benchmarks must be maintained

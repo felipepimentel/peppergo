@@ -1,0 +1,174 @@
+name: code_review
+version: "1.0.0"
+description: "Code review capability with focus on Go best practices"
+
+requirements:
+  tools:
+    - file_reader
+    - git_diff
+    - code_analyzer
+  capabilities: []
+  min_tokens: 4096
+  requires_streaming: false
+
+config:
+  # Review focus areas and their weights
+  focus_areas:
+    style: 1.0
+    security: 1.0
+    performance: 0.8
+    documentation: 0.7
+    testing: 0.9
+    architecture: 1.0
+    concurrency: 0.9
+
+  # Review rules and their severity levels
+  rules:
+    style:
+      - name: "gofmt"
+        severity: error
+        description: "Code must be formatted with gofmt"
+      - name: "naming_conventions"
+        severity: warning
+        description: "Follow Go naming conventions"
+      - name: "package_organization"
+        severity: warning
+        description: "Follow standard package organization"
+
+    security:
+      - name: "input_validation"
+        severity: error
+        description: "Validate all input data"
+      - name: "sql_injection"
+        severity: error
+        description: "Prevent SQL injection vulnerabilities"
+      - name: "authentication"
+        severity: error
+        description: "Verify authentication mechanisms"
+
+    performance:
+      - name: "memory_management"
+        severity: warning
+        description: "Check for memory leaks and efficient allocation"
+      - name: "goroutine_leaks"
+        severity: error
+        description: "Check for goroutine leaks"
+      - name: "efficient_algorithms"
+        severity: warning
+        description: "Use efficient algorithms and data structures"
+
+    documentation:
+      - name: "package_docs"
+        severity: warning
+        description: "Every package should have documentation"
+      - name: "exported_symbols"
+        severity: warning
+        description: "All exported symbols should be documented"
+      - name: "examples"
+        severity: info
+        description: "Include examples for important functionality"
+
+    testing:
+      - name: "unit_tests"
+        severity: error
+        description: "All packages should have unit tests"
+      - name: "test_coverage"
+        severity: warning
+        description: "Maintain adequate test coverage"
+      - name: "benchmark_tests"
+        severity: info
+        description: "Include benchmarks for performance-critical code"
+
+    architecture:
+      - name: "dependency_management"
+        severity: warning
+        description: "Follow clean architecture principles"
+      - name: "interface_design"
+        severity: warning
+        description: "Design clean and minimal interfaces"
+      - name: "package_coupling"
+        severity: warning
+        description: "Minimize package coupling"
+
+    concurrency:
+      - name: "race_conditions"
+        severity: error
+        description: "Check for potential race conditions"
+      - name: "context_usage"
+        severity: error
+        description: "Proper context usage for cancellation"
+      - name: "mutex_usage"
+        severity: warning
+        description: "Proper mutex usage and lock contention"
+
+  # Review response templates
+  templates:
+    issue:
+      format: |
+        **Issue**: {issue_name}
+        **Severity**: {severity}
+        **File**: {file}
+        **Line**: {line}
+        
+        **Description**:
+        {description}
+        
+        **Suggestion**:
+        {suggestion}
+        
+        **Example**:
+        ```go
+        {example}
+        ```
+
+    summary:
+      format: |
+        # Code Review Summary
+        
+        ## Overview
+        - Files Reviewed: {files_count}
+        - Issues Found: {issues_count}
+        - Review Date: {date}
+        
+        ## Issues by Severity
+        - Critical: {critical_count}
+        - Error: {error_count}
+        - Warning: {warning_count}
+        - Info: {info_count}
+        
+        ## Focus Areas
+        {focus_areas}
+        
+        ## Recommendations
+        {recommendations}
+
+  # Review thresholds
+  thresholds:
+    max_issues_per_file: 10
+    max_critical_issues: 5
+    min_test_coverage: 80.0
+    max_complexity: 15
+    max_file_lines: 500
+    max_function_lines: 50
+
+  # Review exclusions
+  exclusions:
+    files:
+      - "*_test.go"
+      - "vendor/*"
+      - "generated/*"
+    rules:
+      - "test_coverage:generated"
+      - "documentation:internal"
+
+metadata:
+  author: "PepperGo Team"
+  tags:
+    - code-review
+    - go
+    - best-practices
+  dependencies:
+    tools:
+      file_reader: ">=1.0.0"
+      git_diff: ">=1.0.0"
+      code_analyzer: ">=1.0.0" 

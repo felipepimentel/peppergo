@@ -1,0 +1,110 @@
+run:
+  # Timeout for analysis
+  timeout: 5m
+  
+  # Include test files
+  tests: true
+  
+  # Build tags
+  build-tags:
+    - integration
+
+linters:
+  enable:
+    # Default linters
+    - gofmt
+    - govet
+    - errcheck
+    - staticcheck
+    - gosimple
+    - ineffassign
+    - typecheck
+    
+    # Additional linters
+    - gocyclo
+    - revive
+    - gosec
+    - misspell
+    - prealloc
+    - exportloopref
+    - gocritic
+    - nakedret
+    - goimports
+    - whitespace
+    - wsl
+
+linters-settings:
+  gocyclo:
+    # Minimal code complexity to report
+    min-complexity: 15
+  
+  revive:
+    rules:
+      - name: exported
+        severity: warning
+        disabled: false
+      - name: package-comments
+        severity: warning
+        disabled: false
+  
+  gosec:
+    excludes:
+      - G104 # Ignore "Errors unhandled" as errcheck handles this
+  
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - style
+      - performance
+    disabled-checks:
+      - commentFormatting # Too strict
+      - hugeParam # Often unavoidable
+  
+  nakedret:
+    # Ban naked returns in functions longer than this
+    max-func-lines: 30
+
+issues:
+  # Maximum issues count per one linter
+  max-issues-per-linter: 50
+  
+  # Maximum count of issues with the same text
+  max-same-issues: 3
+  
+  exclude-rules:
+    # Exclude some linters from running on tests files
+    - path: _test\.go
+      linters:
+        - gocyclo
+        - errcheck
+        - dupl
+        - gosec
+    
+    # Exclude known false positives
+    - text: "G107" # Ignore "Potential HTTP request made with variable url"
+      linters:
+        - gosec
+    
+    # Exclude long lines in tests
+    - path: _test\.go
+      text: "line is"
+      linters:
+        - lll
+
+  # Exclude specific issues by text
+  exclude:
+    - "should have comment or be unexported"
+    - "comment on exported type"
+    - "comment on exported method"
+    - "error strings should not be capitalized"
+
+# Output configuration
+output:
+  # Format: colored-line-number|line-number|json|tab|checkstyle|code-climate|junit-xml|github-actions
+  format: colored-line-number
+  
+  # Print lines of code with issue
+  print-issued-lines: true
+  
+  # Print linter name in the end of issue text
+  print-linter-name: true 

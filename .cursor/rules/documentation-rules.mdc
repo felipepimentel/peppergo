@@ -1,0 +1,239 @@
+---
+title: Documentation Rules
+description: Guidelines for Go code documentation and comments
+globs: **/*.go
+---
+
+# Documentation Guidelines
+
+## Package Documentation
+
+1. **Package Overview**
+   - Every package must have a package comment
+   - Place in a file named `doc.go` for larger packages
+   ```go
+   // Package handlers provides HTTP handlers for the API endpoints.
+   // It implements RESTful endpoints for user management, authentication,
+   // and other core functionalities.
+   package handlers
+   ```
+
+2. **Package Examples**
+   ```go
+   package handlers_test
+
+   func Example() {
+       handler := handlers.NewUserHandler(service)
+       
+       // Initialize router
+       r := chi.NewRouter()
+       r.Post("/users", handler.Create)
+       
+       // Use the handler
+       server := http.Server{
+           Handler: r,
+           Addr:    ":8080",
+       }
+   }
+   ```
+
+## Function Documentation
+
+1. **Function Comments**
+   - Begin with the function name
+   - Describe behavior concisely
+   - Document parameters and return values
+   ```go
+   // CreateUser creates a new user in the system.
+   // It validates the input, checks for existing users with the same email,
+   // and returns the created user or an error if the operation fails.
+   // The context is used for cancellation and timeout.
+   func CreateUser(ctx context.Context, input CreateUserInput) (*User, error) {
+   ```
+
+2. **Function Examples**
+   ```go
+   func ExampleCreateUser() {
+       input := CreateUserInput{
+           Email:    "user@example.com",
+           Password: "secure123",
+       }
+       
+       user, err := CreateUser(context.Background(), input)
+       if err != nil {
+           log.Fatal(err)
+       }
+       fmt.Printf("Created user: %s\n", user.ID)
+       // Output: Created user: user_123
+   }
+   ```
+
+## Interface Documentation
+
+1. **Interface Comments**
+   - Describe the behavior the interface defines
+   - Document any special requirements
+   ```go
+   // UserRepository defines the operations required to manage users in storage.
+   // Implementations must be safe for concurrent use.
+   type UserRepository interface {
+       // FindByID retrieves a user by their unique identifier.
+       // Returns ErrUserNotFound if the user doesn't exist.
+       FindByID(ctx context.Context, id string) (*User, error)
+       
+       // Save persists the user to storage.
+       // For new users, it generates a unique ID.
+       Save(ctx context.Context, user *User) error
+   }
+   ```
+
+## Type Documentation
+
+1. **Struct Documentation**
+   - Document the type's purpose
+   - Document fields if not self-explanatory
+   ```go
+   // Config holds the application configuration.
+   // It is typically loaded from a YAML file at startup.
+   type Config struct {
+       // Server contains HTTP server configuration
+       Server struct {
+           // Port to listen on, defaults to 8080
+           Port int `yaml:"port"`
+           // Host to bind to, defaults to localhost
+           Host string `yaml:"host"`
+       } `yaml:"server"`
+       
+       // Database connection settings
+       Database DatabaseConfig `yaml:"database"`
+   }
+   ```
+
+2. **Constants and Variables**
+   ```go
+   // Common error variables for user operations
+   var (
+       // ErrUserNotFound is returned when a requested user doesn't exist
+       ErrUserNotFound = errors.New("user not found")
+       
+       // ErrInvalidInput is returned for invalid user input
+       ErrInvalidInput = errors.New("invalid input")
+   )
+   
+   // User status constants
+   const (
+       // StatusActive indicates an active user
+       StatusActive = "active"
+       // StatusInactive indicates a disabled user account
+       StatusInactive = "inactive"
+   )
+   ```
+
+## Best Practices
+
+1. **Comment Style**
+   - Use complete sentences
+   - End with a period
+   - Keep it concise but clear
+   ```go
+   // Bad:
+   // creates user
+   
+   // Good:
+   // CreateUser creates a new user with the given input.
+   ```
+
+2. **Documentation Organization**
+   ```
+   project/
+   ├── README.md           # Project overview
+   ├── docs/               # Detailed documentation
+   │   ├── api.md         # API documentation
+   │   ├── deployment.md  # Deployment guide
+   │   └── development.md # Development guide
+   └── examples/          # Example code
+   ```
+
+3. **Generated Documentation**
+   ```bash
+   # Generate and view documentation
+   go doc -all
+   godoc -http=:6060
+   ```
+
+## API Documentation
+
+1. **OpenAPI/Swagger**
+   ```yaml
+   # api/swagger.yaml
+   openapi: 3.0.0
+   info:
+     title: User Service API
+     version: 1.0.0
+   paths:
+     /users:
+       post:
+         summary: Create a new user
+         requestBody:
+           required: true
+           content:
+             application/json:
+               schema:
+                 $ref: '#/components/schemas/CreateUserRequest'
+   ```
+
+2. **API Examples**
+   ```go
+   // Example_createUser demonstrates creating a user via the HTTP API.
+   func Example_createUser() {
+       payload := `{"email": "user@example.com", "password": "secure123"}`
+       resp, err := http.Post("http://api/users", "application/json", strings.NewReader(payload))
+       if err != nil {
+           log.Fatal(err)
+       }
+       defer resp.Body.Close()
+       // Output: 201 Created
+   }
+   ```
+
+## Version Documentation
+
+1. **Version History**
+   ```go
+   // Deprecated: Use NewUserHandler instead.
+   // Will be removed in v2.0.0.
+   func CreateUserHandler() http.Handler {
+       return NewUserHandler()
+   }
+   ```
+
+2. **Breaking Changes**
+   ```go
+   // Breaking: Changed return type from error to error slice
+   // Version: v2.0.0
+   func ValidateUser(user *User) []error {
+       var errors []error
+       // ... validation logic
+       return errors
+   }
+   ```
+
+## Testing Documentation
+
+1. **Test Documentation**
+   ```go
+   // TestCreateUser verifies that users can be created successfully
+   // and that appropriate errors are returned for invalid input.
+   func TestCreateUser(t *testing.T) {
+       // ... test implementation
+   }
+   ```
+
+2. **Benchmark Documentation**
+   ```go
+   // BenchmarkCreateUser measures the performance of user creation.
+   // The benchmark includes database operations.
+   func BenchmarkCreateUser(b *testing.B) {
+       // ... benchmark implementation
+   }
+   ```
