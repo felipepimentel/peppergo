@@ -47,21 +47,11 @@ peppergo/
 
 ## Installation
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/yourusername/peppergo.git
-   cd peppergo
-   ```
-
-2. Install development tools:
-   ```bash
-   make tools
-   ```
-
-3. Build the project:
-   ```bash
-   make build
-   ```
+```bash
+git clone https://github.com/pimentel/peppergo.git
+cd peppergo
+go mod tidy
+```
 
 ## Quick Start
 
@@ -87,10 +77,11 @@ peppergo/
 
    import (
        "context"
+       "fmt"
        "log"
 
-       "github.com/yourusername/peppergo/pkg/agent"
-       "github.com/yourusername/peppergo/pkg/provider/openai"
+       "github.com/pimentel/peppergo/pkg/agent"
+       "github.com/pimentel/peppergo/pkg/provider/openai"
    )
 
    func main() {

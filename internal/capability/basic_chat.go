@@ -6,7 +6,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/yourusername/peppergo/pkg/types"
+	"github.com/pimentel/peppergo/pkg/types"
 )
 
 // BasicChatCapability provides basic chat functionality

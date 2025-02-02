@@ -16,6 +16,7 @@ import (
 	"github.com/pimentel/peppergo/pkg/types"
 )
 
+// OpenRouterConfig holds the configuration for the OpenRouter provider
 type OpenRouterConfig struct {
 	APIKey      string
 	Model       string
@@ -24,20 +25,123 @@ type OpenRouterConfig struct {
 	RateLimiter *rate.Limiter
 }
 
+// OpenRouterProvider implements the types.Provider interface for OpenRouter
 type OpenRouterProvider struct {
+	name   string
+	models []string
 	config *OpenRouterConfig
 	client *http.Client
 	logger *zap.Logger
 }
 
+// NewOpenRouterProvider creates a new OpenRouter provider instance
 func NewOpenRouterProvider(logger *zap.Logger, config *OpenRouterConfig) *OpenRouterProvider {
 	return &OpenRouterProvider{
+		name: "openrouter",
+		models: []string{
+			"openai/gpt-4",
+			"openai/gpt-3.5-turbo",
+			"anthropic/claude-2",
+			"google/gemini-pro",
+		},
 		config: config,
 		client: &http.Client{
 			Timeout: 30 * time.Second,
 		},
 		logger: logger,
 	}
+}
+
+// Name returns the provider's name
+func (p *OpenRouterProvider) Name() string {
+	return p.name
+}
+
+// AvailableModels returns the list of available models
+func (p *OpenRouterProvider) AvailableModels() []string {
+	return p.models
+}
+
+// Chat sends a chat completion request to OpenRouter
+func (p *OpenRouterProvider) Chat(ctx context.Context, req *types.ChatRequest) (*types.ChatResponse, error) {
+	if p.config.APIKey == "" {
+		return nil, fmt.Errorf("API key is required")
+	}
+
+	// Apply rate limiting if configured
+	if p.config.RateLimiter != nil {
+		err := p.config.RateLimiter.Wait(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("rate limit exceeded: %w", err)
+		}
+	}
+
+	jsonBody, err := json.Marshal(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", "https://openrouter.ai/api/v1/chat/completions", bytes.NewReader(jsonBody))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	// Set required headers
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("Authorization", fmt.Sprintf("Bearer %s", p.config.APIKey))
+	httpReq.Header.Set("HTTP-Referer", "https://github.com/pimentel/peppergo")
+
+	resp, err := p.client.Do(httpReq)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("request failed with status %d: %s", resp.StatusCode, string(body))
+	}
+
+	var chatResp types.ChatResponse
+	if err := json.Unmarshal(body, &chatResp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &chatResp, nil
+}
+
+// StreamChat streams chat completion responses from OpenRouter
+func (p *OpenRouterProvider) StreamChat(ctx context.Context, req *types.ChatRequest) (<-chan *types.ChatResponse, error) {
+	responses := make(chan *types.ChatResponse)
+
+	go func() {
+		defer close(responses)
+
+		// Set streaming flag
+		req.Stream = true
+
+		// Make the request
+		resp, err := p.Chat(ctx, req)
+		if err != nil {
+			p.logger.Error("error in stream chat",
+				zap.Error(err),
+				zap.String("model", req.Model))
+			return
+		}
+
+		// Send the response
+		select {
+		case <-ctx.Done():
+			return
+		case responses <- resp:
+		}
+	}()
+
+	return responses, nil
 }
 
 func (p *OpenRouterProvider) Initialize(ctx context.Context) error {

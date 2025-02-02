@@ -1,4 +1,4 @@
-.PHONY: all build test lint clean validate docs generate
+.PHONY: all build test lint clean validate docs generate test test-integration test-coverage
 
 # Go parameters
 GOCMD=go
@@ -106,4 +106,29 @@ help:
 	@echo "  make bench        - Run benchmarks"
 	@echo "  make security     - Run security checks"
 	@echo "  make docker-build - Build Docker image"
-	@echo "  make docker-run   - Run Docker container" 
+	@echo "  make docker-run   - Run Docker container"
+
+# Run only integration tests
+test-integration:
+	$(GOTEST) -v ./test/integration/...
+
+# Run tests with coverage
+test-coverage:
+	$(GOTEST) -v -coverprofile=coverage.out ./...
+	$(GOCMD) tool cover -html=coverage.out -o coverage.html
+
+# Default target
+all: test
+
+# Run all tests
+test:
+	$(GOTEST) -v -race -cover ./...
+
+# Run only integration tests
+test-integration:
+	$(GOTEST) -v ./test/integration/...
+
+# Run tests with coverage
+test-coverage:
+	$(GOTEST) -v -coverprofile=coverage.out ./...
+	$(GOCMD) tool cover -html=coverage.out -o coverage.html 
